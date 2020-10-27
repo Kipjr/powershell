@@ -1,0 +1,25 @@
+param (
+    [string]$hosts = "localhost" 
+)
+
+$hosts=$hosts.split("`n").trim()
+$ext = Read-Host("Extension")
+$loc = Read-Host("Location (optional)")
+if(($ext.Length -gt 1) -and ($loc.Length -lt 1)) {
+    foreach ($h in $hosts) {
+        $drives = get-wmiobject -computer $h win32_logicaldisk -filter "drivetype=3" | select -Exp DeviceID
+         foreach ($drive in $drives) {
+            $drive = $drive.Substring(0,$drive.Length-1) + "$"
+            Get-ChildItem -Recurse -Force \\$h\$drive -ErrorAction SilentlyContinue | Where-Object { ($_.PSIsContainer -eq $false) -and  ( $_.Extension -eq ".$ext") } | Select-Object Name,@{Name="GBytes";Expression={ "{0:N1}" -f ($_.Length / 1GB) }},@{Name="Server";Expression={ (([string]$_.Directory).split("\")[2]) }},@{Name="Disk";Expression={ (([string]$_.Directory).split("\")[3]) }},@{Name="Directory";Expression={ (([string]$_.Directory).split("\",4)[3]).replace("$",":")}}| Export-Csv C:\temp\FoundFiles_$ext.csv -nti -append
+        }
+     }
+}
+if(($ext.Length -gt 1) -and ($loc -ne $null)) {
+$locd=$loc.Replace(":\","$\")
+    foreach ($h in $hosts) {
+        Get-ChildItem -Recurse -Force \\$h\$locd -ErrorAction SilentlyContinue | Where-Object { ($_.PSIsContainer -eq $false) -and  ( $_.Extension -eq ".$ext") } | Select-Object Name,@{Name="GBytes";Expression={ "{0:N1}" -f ($_.Length / 1GB) }},@{Name="Server";Expression={ (([string]$_.Directory).split("\")[2]) }},@{Name="Disk";Expression={ (([string]$_.Directory).split("\")[3]) }},@{Name="Directory";Expression={ (([string]$_.Directory).split("\",4)[3]).replace("$",":")}}| Export-Csv "C:\temp\FoundFiles_$ext.csv" -nti -append
+    }
+}
+else { 
+    write-host("extension too short, check parameters")
+}
