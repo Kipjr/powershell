@@ -1,5 +1,5 @@
 param (
-    [bool]$limit = $true, #limit 500 rows
+    [int]$limit = 500, #limit 500 rows
     [string]$action = $null,
     [string]$protocol = $null,
     [bool]$resolve = $false, #resolve DNS
@@ -35,9 +35,7 @@ foreach ($v in $vars) { #foreach logsfile/var
     $log=$log.split("`n") #newline
     if($log.Length -le 7) {continue} #dont want empty logs
     $log=$log[5..($log.length - 1)] #skip first 4 rows
-    If($limit) {
-       $log=$log[($log.length - 500)..($log.length - 1)] #only 500 rows
-    }
+    $log=$log[($log.length - $limit)..($log.length - 1)] #only 500 rows (or more)
     
     foreach($r in $log) { #foreach row
         $d=$r.split(" ")
