@@ -1,5 +1,5 @@
 #Function GetKeyPress([string]$regexPattern='[0-9]', [string]$message=$null, [int]$timeOutSeconds=0){
-if($myinvocation.line -eq $null) {
+if($myinvocation.line -eq "") {
 
     Function GetKeyPress( [string]$message=$null, [int]$timeOutSeconds=0){
         $key = $null
