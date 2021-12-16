@@ -23,7 +23,7 @@ $scriptblock = {
                 if ($drive.Name -notin $using:ignoreDrives) {
                     $items = Get-ChildItem -Path $drive.Root -Filter $using:keyword -ErrorAction SilentlyContinue -File -Recurse
                     foreach ($item in $items) {
-                        "Found: $($env:COMPUTERNAME);($item.name);$($item.FullName)" | write-host  # Show all files found with full drive and path
+                        "Found: $($env:COMPUTERNAME);$($item.name);$($item.FullName)" | write-host  # Show all files found with full drive and path
                         if($item.Fullname | Select-String 'log4j-core-2.*'){
                             if(-not(test-path -path 'C:\Program Files\7-Zip\7z.exe')) {
                                 curl   -o 'c:\temp\7zip.exe' 'https://d2.7-zip.org/a/7z2106-x64.exe' --ssl-no-revoke
