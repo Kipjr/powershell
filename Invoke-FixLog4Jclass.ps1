@@ -1,3 +1,6 @@
+Param(
+    [switch]$fix
+)
 <#
 $computernames = ('[
   "1",
@@ -7,8 +10,12 @@ $computernames = ('[
 if(-not($computernames)){
 	$computerNames = @(get-adcomputer -Filter { OperatingSystem -Like '*Windows Server*' } -Properties * | Select name )
 } 
-
-$logfile = "./Log4j.log"
+if($fix.IsPresent -eq $true){
+    "This will install 7zip if not present. Required to remove from inside .jar files" | write-host
+    sleep 1
+    pause
+}    
+ $logfile = "./Log4j.log"
 $ignoreDrives = @("A", "B" ) # A and B not relevant, D is temp drive of Azure VMs
 $keyword = "*log4j-*.jar"
 
@@ -25,15 +32,19 @@ $scriptblock = {
                     foreach ($item in $items) {
                         "Found: $($env:COMPUTERNAME);$($item.name);$($item.FullName)" | write-host  # Show all files found with full drive and path
                         if($item.Fullname | Select-String 'log4j-core-2.*'){
-                            if(-not(test-path -path 'C:\Program Files\7-Zip\7z.exe')) {
-                                curl   -o 'c:\temp\7zip.exe' 'https://d2.7-zip.org/a/7z2106-x64.exe' --ssl-no-revoke
-                                c:\temp\7zip.exe /S 
-                                start-sleep 20
+                            if($fix.IsPresent -eq $true){
+                                if(-not(test-path -path 'C:\Program Files\7-Zip\7z.exe')) {
+                                    curl   -o 'c:\temp\7zip.exe' 'https://d2.7-zip.org/a/7z2106-x64.exe' --ssl-no-revoke
+                                    c:\temp\7zip.exe /S 
+                                    start-sleep 20
+                                }
+                                "Trying to remove: $($item.FullName)" | write-host  # Show all files found with full drive and path
+                                $result = & "C:\Program Files\7-Zip\7z.exe" l "$($item.FullName)"  | select-string "org\\apache\\logging\\log4j\\core\\lookup\\JndiLookup.class"
+                                if($result) {& "C:\Program Files\7-Zip\7z.exe" d $($item.FullName) "org\apache\logging\log4j\core\lookup\JndiLookup.class" }
+                            } else {
+                                "Please manually remove class 'JndiLookup.class' from: $($item.FullName)" | write-host
                             }
-                            "Trying to remove: $($item.FullName)" | write-host  # Show all files found with full drive and path
-                            $result = & "C:\Program Files\7-Zip\7z.exe" l "$($item.FullName)"  | select-string "org\\apache\\logging\\log4j\\core\\lookup\\JndiLookup.class"
-                            if($result) {& "C:\Program Files\7-Zip\7z.exe" d $($item.FullName) "org\apache\logging\log4j\core\lookup\JndiLookup.class" }
-                        
+                            
                         }
                     }
                 }
