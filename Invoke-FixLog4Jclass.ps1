@@ -1,12 +1,19 @@
 Param(
     [switch]$fix
 )
+###
+### Option 1: List of computernames
+###
 <#
 $computernames = ('[
   "1",
   "2"
 ]' | convertfrom-json) |% { [pscustomobject]@{Name="$_"} }
 #>
+
+###
+### Option 2: Get all servers
+###
 if(-not($computernames)){
 	$computerNames = @(get-adcomputer -Filter { OperatingSystem -Like '*Windows Server*' } -Properties * | Select name )
 } 
