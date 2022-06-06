@@ -1,17 +1,7 @@
-###
-### Static
-###
-
-###
-### Functions
-###
-
-
 class SupportedAlgorithms : System.Management.Automation.IValidateSetValuesGenerator
 {
     [string[]] GetValidValues()
     {
-        ## Write your code here
         $SupportedAlgorithms = (get-command Get-Filehash).parameters.values.Where({$_.name -eq "Algorithm"}).Attributes.Validvalues
         return $SupportedAlgorithms
     }
@@ -57,7 +47,7 @@ function Get-Hash
     For security reasons, MD5 and SHA1, which are no longer considered secure, should only be used for simple change validation, and should not be used to generate hash values for files that require protection from attack or tampering.
 
     .NOTES
-    
+
     .EXAMPLE
 
     Get-Hash -Text 'This is a string'
@@ -97,23 +87,15 @@ function Get-Hash
         {
             try
             {
-                $FullPath = Resolve-Path -Path $FilePath -ErrorAction Stop
-                $InputObject = [System.IO.File]::OpenRead($FilePath)
-                if($InputObject.GetType().BaseType -eq [System.IO.Stream]){
-                    # Construct the strongly-typed crypto object
-                    $hasher = [System.Security.Cryptography.HashAlgorithm]::Create($Algorithm)
-                    
-                    # Compute file-hash using the crypto object
-                    [Byte[]] $computedHash = $Hasher.ComputeHash($InputObject)
-                    [string] $hash = [BitConverter]::ToString($computedHash) -replace '-',''
-
-                    $retVal = New-Object -TypeName psobject -Property @{
-                        Algorithm = $Algorithm.ToUpperInvariant()
-                        Hash = $hash
-                        Path = "$FullPath"
-                    }
-                    $retVal
+                $FullPath = Resolve-Path -Path $FilePath -ErrorAction Stop                   
+                $hash = $(Get-FileHash -path  $FullPath -Algorithm $Algorithm).hash
+                $retVal = New-Object -TypeName psobject -Property @{
+                    Algorithm = $Algorithm.ToUpperInvariant()
+                    Hash = $hash
+                    Path = "$FullPath"
                 }
+                $retVal
+                
             }
             catch
             {
@@ -126,15 +108,11 @@ function Get-Hash
         }
         Text
         {
+           
             $InputObject = [System.Text.Encoding]::$Encoding.GetBytes($Text)
             if($InputObject.GetType() -eq [Byte[]]){
-                # Construct the strongly-typed crypto object
-                $hasher = [System.Security.Cryptography.HashAlgorithm]::Create($Algorithm)
-
-                # Compute file-hash using the crypto object
-                [Byte[]] $computedHash = $Hasher.ComputeHash($InputObject)
-                [string] $hash = [BitConverter]::ToString($computedHash) -replace '-',''
-
+                $InputStream = [IO.MemoryStream]::new($InputObject)
+                $hash = $(Get-FileHash -InputStream $InputStream -Algorithm $Algorithm).hash
                 $retVal = New-Object -TypeName psobject -Property @{
                     Algorithm = $Algorithm.ToUpperInvariant()
                     Hash = $hash
